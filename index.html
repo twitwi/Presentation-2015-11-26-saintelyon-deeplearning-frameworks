@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+            
+        <title>Abstractions and Frameworks  for Deep Learning:  a Discussion  −  Caffe, Torch, Theano, TensorFlow, et al.</title>
+
+        <meta name="author" content="Rémi Emonet">
+        <meta name="venue" content="Saintélyon Deep Learning Workshop">
+        <meta name="date" content="2015-11-26">
+
+        <style type="text/css">
+
+          .black-bg {background: black !important;}
+          .highlight {color: red !important;}
+          .plan > ul, .plan-like > ul {
+	        position: absolute;
+	        left: 0;
+	        bottom: 30px;
+	        background: rgba(255,255,255,.5);
+          }
+          .plan-like2 > ul {
+	        position: absolute;
+	        left: 0;
+	        bottom: 30px;
+                color: black !important;
+	        background: rgba(255,255,255,.5);
+          }
+          .dense {font-size: 80%;}
+
+
+            /* custom css can be written here, some examples provided */
+            
+            /* for the base demo */
+            .in-red {color: red !important; text-decoration: underline;}
+            
+            /* for the svg demo */
+            svg .in-red {fill: darkred; fill-opacity: .5; stroke: white;}
+            
+
+            /* a few nicer slides */
+            .blackbg {background: black !important;}
+            .title-slide ul li { list-style: none; }
+            .title-slide ul {
+                font-size: 20px; color: darkgrey;
+                text-align: center;
+                position: absolute; bottom: 50px; left:0; right: 0;
+            }
+        </style>
+
+
+	<script src="deck-packed.js"></script>
+        <script>
+            var cssAndJs = ["light-red-dense.css"]; // include the theme (can add any css or js to the list)
+            var options = {
+                AFTERSMARTDOWN: function() {
+                    $(".deck-container>.libyli li:not(li li):not(.notslide)").addClass("slide");
+                    $("li.libyli>ul>li:not(.notslide)").addClass("slide");
+                }
+            }; // to override default deck.js options
+            includedeck(cssAndJs, options);
+        </script>
+    </head>
+    <body>
+        <div class="deck-container">
+
+            <!-- splash screen when loading -->
+            <div class="deck-loading-splash" style="background: black; color: chartreuse;">
+                <span class="vcenter" style="font-size: 30px; font-family: Arial; ">Please wait, while the deck is loading…</span>
+            </div>
+
+
+            <!-- --------------------------- -->
+            <!-- slides in extended markdown -->
+            <section class="smart">
+
+# <span class="var-title-br"></span> {*no-status title-slide} // comment
+- <span class="var-author"></span>
+- <span class="var-venue"></span> − <span class="var-date"></span>
+
+## Disclaimer {plan-like image-fit /black-bg darkened top-left /no-status}
+<div class="img" style="background-image: url('media/ecrins.jpg')" ></div>
+
+## Introductory Poll {plan-like image-fit darkened top-right /no-status}
+<div class="img" style="background-image: url('media/minion-question.jpg')" ></div>
+- Did you ever use? {libyli}
+  - Caffe
+  - Theano
+  - Lasagne
+  - Torch
+  - TensorFlow
+  - Other?
+- Any experience to share? {slide}
+
+## Overview {#plan .plan image-fit darkened top-right /no-status}
+<div class="img" style="background-image: url('media/overview.jpg')" data-attribution="https://www.flickr.com/photos/p1r/7044898925/sizes/l/" data-attribution-content="..." data-scale=""></div>
+- Deep Learning? {dlintro} // and SGD etc
+- Abstraction in Frameworks {abstractions}
+- A Tour of Existing Framework {tour} // not all at all
+- More Discussions? {discuss}
+
+<!-- ============================================ -->
+# @copy:#plan: %+class:highlight: .dlintro
+
+## Finding Parameters of a Function (supervised) {libyli}
+- Notations
+  - Input $i$
+  - Output $o$
+  - Function $f$ given
+  - Parameters $\theta$ to be learned
+  - We suppose: $o = f_\theta(i)$
+- How to optimize it: how to find the best $\theta$?
+  - need some regularity assumptions
+  - usually, at least differentiability
+- Remark: a more generic view
+  - $o = f_\theta(i) = f(\theta, i)$
+
+## Gradient Descent {libyli}
+- We want to find the best parameters {libyli}
+  - we suppose: $o = f_\theta(i)$
+  - we have examples of inputs $i^n$ and target output $t^n$
+  - we want to minimize the sum of errors $L(\theta) = \sum_n L(f_\theta(i^n), t^n)$
+  - we suppose $f$ and $L$ are differentiable
+- Gradient descent (gradient = vector of partial derivatives)
+  - start with a random $\theta^0$
+  - compute the gradient and update $\theta^{t+1} = \theta^{t} - \gamma\nabla_\theta L(\theta)$
+- Variations
+  - stochastic gradient descent (SGD)
+  - conjugate gradient descent
+  - BFGS // Broyden–Fletcher–Goldfarb–Shanno algorithm
+  - L-BFGS // limited memory
+  - ...
+
+## Finding Parameters of a “Deep” Function {libyli}
+- Idea {libyli}
+  - $f$ is a composition of functions 
+  - 2 layers: $o = f_\theta(i) = f^2\_{\theta^2}(f^1\_{\theta^1}(i)) $
+  - 3 layers: $o = f_\theta(i) = f^3\_{\theta^3}(f^2\_{\theta^2}(f^1\_{\theta^1}(i)))$
+  - $K$ layers: $o = f_\theta(i) = f^K\_{\theta^K}(... f^3\_{\theta^3}(f^2\_{\theta^2}(f^1\_{\theta^1}(i)))...)$
+  - with all $f_l$ differentiable
+- How can we optimize it?
+- The chain rule!
+- Many versions (with $F = f\circ g$)
+  - $(f\circ g)'=(f'\circ g)\cdot g'$
+  - $F'(x) = f'(g(x)) g'(x)$
+  - $\frac{df}{dx} =  \frac{df}{dg} \cdot \frac{dg}{dx} {}$
+
+## Finding Parameters of a “Deep” Function {libyli}
+- Reminders: $K$ layers: $o = f_\theta(i) = f^K\_{\theta^K}(... f^3\_{\theta^3}(f^2\_{\theta^2}(f^1\_{\theta^1}(i)))...)$ {dense}
+  - minimize the sum of errors $L(\theta) = \sum_n L(f_\theta(i^n), t^n)$
+  - chain rule $\frac{df}{dx} =  \frac{df}{dg} \cdot \frac{dg}{dx} {}$
+- Goal: compute $\nabla_\theta L$ for gradient descent {libyli dense}
+  - $\nabla_{\theta^K} L = \frac{dL}{d_{\theta^K}}$ $=\frac{dL}{df^K} \frac{df^K}{d_{\theta^K}} {}$
+  - $\nabla_{\theta^{K-1}} L = \frac{dL}{d_{\theta^{K-1}}}$ $=\frac{dL}{df^K} \frac{df^K}{df^{K-1}} \frac{df^{K-1}}{d_{\theta^{K-1}}} {}$
+  - $\nabla_{\theta^1} L = \frac{dL}{d_{\theta^1}}$ $=\frac{dL}{df^K} \frac{df^K}{df^{K-1}} \cdots \frac{df^2}{df^1} \frac{df^1}{d_{\theta^1}} {}$
+  - $\frac{dL}{df^K} {}$: gradient of the loss with respect to its input ✔
+  - $\frac{df^k}{df^{k-1}} {}$: gradient of a function with respect to its input ✔
+  - $\frac{df^k}{d_{\theta^k}} {}$: gradient of a function with respect to its parameters ✔
+
+## Deep Learning and Composite Functions {libyli}
+- Deep Learning? {libyli}
+  - NN can be deep, CNN can be deep
+  - “any” composition of differentiable function <br/>can be optimized with gradient descent
+  - some other models are also deep... (hierarchical models, etc)
+- Evaluating a composition $f_\theta(i) = f^K\_{\theta^K}(... f^3\_{\theta^3}(f^2\_{\theta^2}(f^1\_{\theta^1}(i)))...)$
+  - “forward pass”
+  - evaluate successively each function
+- Computing the gradient $\nabla_\theta L$ (for gradient descent)
+  - compute the input ($o) gradient (from the output error)
+  - for each $f_1$, $f_2$, ...
+    - compute the parameter gradient (from the output gradient)
+    - compute the input gradient (from the output gradient)
+  
+## Back to “seeing parameters as inputs” {libyli}
+- Parameters ($\theta^k$)
+- Just another input of $f_k$
+- Can be rewritten, e.g. as $f_k(\theta_k, x)$
+- More generic
+  - inputs can be constant
+  - inputs can be parameters
+  - inputs can be produced by another function (e.g. $f(g(x), h(x))$)
+
+<!-- ============================================ -->
+# @copy:#plan: %+class:highlight: .abstractions
+
+## Function/Operator/Layer {libyli}
+- The functions that we can use for $f_k$
+- Many choices
+  - fully connected layers
+  - convolutions layers
+  - activation functions (element-wise)
+  - soft-max
+  - pooling
+  - ...
+- Loss Functions: same with no parameters
+- In the wild
+  - Torch module
+  - Theano operator
+
+## Data/Blob/Tensor {libyli}
+- The data: input, intermediate result, parameters, gradient, ...
+- Usually a tensor (n-dimensional matrices)
+- In the wild
+  - Torch tensor
+  - Theano tensor, scalars, numpy arrays
+
+
+<!-- ============================================ -->
+# @copy:#plan: %+class:highlight: .tour
+
+
+## Contenders
+- Caffe
+- Torch
+- Theano
+- Lasagne
+- Tensor Flow <span class="comment"> [Tensor Flow](https://github.com/tensorflow/tensorflow)</span>
+- Deeplearning4j
+- ... // and way more (e.g. samsung veles, intel, microsoft)
+
+## Overview {libyli}
+- Basics
+  - install CUDA/Cublas/OpenBlas
+  - blob/tensors, blocks/layers/loss, parameters
+  - cuDNN
+  - open source
+- Control flow
+  - define a composite function (graph)
+  - choice of an optimizer
+  - forward, backward
+- Extend
+  - write a new operator/module
+  - "forward"
+  - "backward": gradParam, gradInput
+
+
+## Caffe
+- "made with expression, speed, and modularity in mind"
+- "developed by the Berkeley Vision and Learning Center (BVLC)"
+- "released under the BSD 2-Clause license"
+- C++
+- layers-oriented <span class="comments">http://caffe.berkeleyvision.org/tutorial/layers.html</span>
+- plaintext protocol buffer schema (prototxt) to describe models (and so save them too)
+- 1,068 / 7,184 / 4,077
+
+## Torch7
+- By
+  - Ronan Collobert (Idiap, now Facebook)
+  - Clement Farabet (NYU, now Madbits now Twitter)
+  - Koray Kavukcuoglu (Google DeepMind)
+- Lua (+ C)
+  - need to learn
+  - easy to embed
+- Layer-oriented
+  - easy to use
+  - difficult to extend, sometimes (merging sources)
+- 418 / 3,267 / 757
+
+## Theano
+- "is a Python library"
+- "allows you to define, optimize, and evaluate mathematical expressions"
+- "involving multi-dimensional arrays"
+- "efficient symbolic differentiation"
+- "transparent use of a GPU"
+- "dynamic C code generation"
+- Use symbolic expressions: **reasoning on the graph**
+  - write numpy-like code
+  - no forced “layered” architecture
+  - computation graph
+- 263 / 2,447 / 878
+
+## Lasagne (Keras, etc)
+- Overlay to Theano
+- Provide layer API close to caffe/torch etc
+- Layer-oriented
+- 133 / 1,401 / 342
+
+## Tensor Flow
+- By Google, Nov. 2015
+- Selling points
+  - easy to move from a cluster to a mobile phone
+  - easy to distribute
+- Currently slow?
+- Not fully open yet?
+- 1,303 / 13,232 / 3,375
+
+
+## Deeplearning4j
+- “Deep Learning for Java, Scala & Clojure on Hadoop, <br/> Spark & GPUs“
+- Apache 2.0-licensed
+- Java
+- High level (layer-oriented)
+- Typed API
+- 236 / 1,648 / 548
+
+
+<!-- ============================================ -->
+# @copy:#plan: %+class:highlight: .discuss
+
+# Be creative! <br/> anything differentiable <br/> can be tried!
+
+# How to choose a framework?
+- {comment}
+  - Caffe, Torch, Theano, Lasagne, Tensor Flow, Deeplearning4j, samsung veles, ...
+  - speed, language, target (mobile), gpu/cluster
+
+# Any experience to share?
+
+
+## Thanks {plan-like2 image-fit /black-bg darkened top-left /no-status title-slide deck-status-fake-end}
+<div class="img" style="background-image: url('media/ecrins.jpg')" ></div>
+- <span class="var-title-br"></span>
+- <span class="var-author"></span>
+- <span class="var-venue"></span> − <span class="var-date"></span>
+
+            </section>
+
+            <!-- footer and other decorations -->
+            <p class="deck-status deck-progress-10">
+                <span class="deck-status-current"></span> / <span class="deck-status-total"></span> − <span class="var-author">automatically replaced by the author</span> − <span class="var-title">automatically replaced by the title</span>
+            </p>
+
+
+        </div>
+    </body>
+
+</html>
